@@ -34,7 +34,7 @@ In the settings you can also choose:
 | Maths on the page | For example |
 |---|---|
 | KaTeX | ChatGPT, Claude, the KaTeX docs |
-| MathJax 2, 3 and 4 | Mathematics Stack Exchange, many university and course pages |
+| MathJax 2, 3 and 4 | Mathematics Stack Exchange, Moodle, many university and course pages |
 | Wikipedia | Any article with formulas |
 | Google Search | AI Overviews |
 | MathML | arXiv HTML papers |
