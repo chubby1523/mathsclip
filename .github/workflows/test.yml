@@ -1,0 +1,57 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20, 22]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Validate manifest.json
+        run: |
+          node -e '
+            const fs = require("fs");
+            const manifest = JSON.parse(fs.readFileSync("manifest.json", "utf8"));
+            if (manifest.manifest_version !== 3) {
+              throw new Error("Expected manifest_version 3");
+            }
+            if (typeof manifest.description !== "string" || manifest.description.length > 132) {
+              throw new Error("manifest.description must be <= 132 characters");
+            }
+            console.log("manifest.json valid (description length:", manifest.description.length, ")");
+          '
+
+      - name: Syntax check all src/**/*.js files
+        run: |
+          node -e '
+            const fs = require("fs");
+            const path = require("path");
+            const { execFileSync } = require("child_process");
+            function walk(dir) {
+              for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+                const full = path.join(dir, entry.name);
+                if (entry.isDirectory()) walk(full);
+                else if (entry.name.endsWith(".js")) {
+                  execFileSync(process.execPath, ["--check", full], { stdio: "inherit" });
+                }
+              }
+            }
+            walk("src");
+            console.log("All src/**/*.js files passed node --check");
+          '
+
+      - name: Run unit tests
+        run: node --test tests/run-tests.js

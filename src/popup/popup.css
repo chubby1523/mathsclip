@@ -1,0 +1,292 @@
+@font-face {
+  font-family: "MathsClip Serif Fallback";
+  src: local("Georgia"), local("Times New Roman");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+  size-adjust: 94%;
+  ascent-override: 99.5%;
+  descent-override: 26.6%;
+  line-gap-override: 21.3%;
+}
+
+@font-face {
+  font-family: "MathsClip Typewriter Fallback";
+  src: local("Menlo"), local("Consolas"), local("Courier New");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+  size-adjust: 92%;
+  ascent-override: 97.8%;
+  descent-override: 27.2%;
+  line-gap-override: 0%;
+}
+
+/* src/fonts/ holds Latin-only, renamed subsets of the CMU fonts (OFL, see src/fonts/OFL.txt),
+   built from fonts-full/ (gitignored) by scripts/subset-fonts.py. */
+@font-face {
+  font-family: "MathsClip Serif";
+  src: url("../fonts/cmunrm.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "MathsClip Serif";
+  src: url("../fonts/cmunti.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "MathsClip Serif";
+  src: url("../fonts/cmunbx.woff2") format("woff2");
+  font-weight: 600 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "MathsClip Typewriter";
+  src: url("../fonts/cmuntt.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* One token set for both modes: light-dark() follows color-scheme, which follows the system.
+   Contrast on --bg (light / dark): ink 18.9 / 15.4, muted 5.7 / 7.5, accent 7.9 / 8.4.
+   light-dark() needs Chrome 123+, pinned via manifest minimum_chrome_version. */
+:root {
+  color-scheme: light dark;
+  --font-serif: "MathsClip Serif", "MathsClip Serif Fallback", Georgia, Cambria, "Times New Roman", serif;
+  --font-mono: "MathsClip Typewriter", "MathsClip Typewriter Fallback", Menlo, Consolas, monospace;
+  --bg: light-dark(#ffffff, #1b1b1d);
+  --ink: light-dark(#111111, #f2f2f2);
+  --muted: light-dark(#666666, #ababb0);
+  --rule: light-dark(#dedede, #333336);
+  --accent: light-dark(#a80000, #ff9999);
+  --chip: light-dark(#f2f2f2, #2a2a2e);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  width: 344px;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-serif);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.popup {
+  padding: 1rem 1.05rem;
+  counter-reset: sec;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.6rem;
+}
+
+.logo {
+  flex-shrink: 0;
+}
+
+.name {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.tag {
+  margin: 0;
+  font-size: 0.78rem;
+  font-style: italic;
+  color: var(--muted);
+}
+
+.tip {
+  margin: 0 0 0.6rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.section {
+  border: 0;
+  border-top: 1px solid var(--muted);
+  margin: 0 0 0.6rem;
+  padding: 0.15rem 0 0;
+  min-width: 0;
+}
+
+.section-head {
+  padding: 0 0.35rem 0 0;
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--rule);
+  cursor: pointer;
+}
+
+.row:last-child {
+  border-bottom: 0;
+}
+
+.row-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.row-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.28;
+}
+
+.row-desc {
+  margin-top: 0.1rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.option {
+  margin: 0.35rem 0 0.7rem;
+}
+
+.option-label {
+  margin-bottom: 0.3rem;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.option-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.2rem;
+}
+
+/* Only colour changes on selection, never weight or position (CMU bold is a wider face). */
+.opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.84rem;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.opt:has(input:checked) {
+  color: var(--ink);
+}
+
+code {
+  padding: 0 4px;
+  border-radius: 2px;
+  background: var(--chip);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+}
+
+/* Key combo: <kbd><kbd>Ctrl</kbd>+<kbd>C</kbd></kbd>; inner kbds are the keycaps. */
+kbd {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+kbd kbd {
+  margin: 0 0.15em;
+  padding: 0 4px;
+  border: 1px solid var(--muted);
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  background: var(--chip);
+  color: var(--ink);
+}
+
+kbd kbd:first-child {
+  margin-left: 0;
+}
+
+kbd kbd:last-child {
+  margin-right: 0;
+}
+
+/* Checkbox and radio: the fill is the input's own background clipped to its content box,
+   so it snaps to device pixels with the border and stays centred at fractional zoom. */
+input[type="checkbox"],
+input[type="radio"] {
+  appearance: none;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 2px;
+  border: 1px solid var(--ink);
+  background: var(--bg) content-box;
+  cursor: pointer;
+}
+
+input[type="radio"] {
+  width: 15px;
+  height: 15px;
+  padding: 3px;
+  border-radius: 50%;
+}
+
+input:checked {
+  border-color: var(--accent);
+  background-color: var(--accent);
+}
+
+@media (forced-colors: active) {
+  input:checked {
+    background-color: CanvasText;
+  }
+}
+
+:where(input, a):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.footer {
+  text-align: center;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.footer-note {
+  margin: 0;
+  font-style: italic;
+  color: var(--muted);
+}
+
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.footer-links a {
+  color: var(--accent);
+}

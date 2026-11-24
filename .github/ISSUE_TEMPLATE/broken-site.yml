@@ -1,0 +1,43 @@
+name: Broken site or wrong output
+description: Maths on a page doesn't copy, or copies as the wrong LaTeX.
+labels: ["broken site"]
+body:
+  - type: input
+    id: url
+    attributes:
+      label: Page URL
+      description: The page where it went wrong (a public link if possible).
+      placeholder: https://en.wikipedia.org/wiki/...
+    validations:
+      required: true
+  - type: dropdown
+    id: method
+    attributes:
+      label: How did you copy?
+      multiple: true
+      options:
+        - Ctrl+C / Cmd+C on a selection
+        - Right-click > Copy Selection with LaTeX
+        - Right-click > Copy Equation as LaTeX
+        - Click-to-Copy
+    validations:
+      required: true
+  - type: textarea
+    id: got
+    attributes:
+      label: What you got
+      description: Paste exactly what ended up on your clipboard.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      render: text
+  - type: input
+    id: versions
+    attributes:
+      label: Browser and MathsClip version
+      description: Chrome version is in chrome://settings/help; MathsClip's is on chrome://extensions.
+      placeholder: Chrome 131, MathsClip 1.0.0

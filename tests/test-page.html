@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MathsClip — Local Test Playground</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        max-width: 780px;
+        margin: 40px auto;
+        padding: 0 20px;
+        line-height: 1.65;
+        color: #1e293b;
+      }
+      section {
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 16px 20px;
+        margin-bottom: 20px;
+      }
+      h2 {
+        margin-top: 0;
+        font-size: 1.1rem;
+      }
+      .katex-mathml,
+      mjx-assistive-mml {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(1px, 1px, 1px, 1px);
+        white-space: nowrap;
+      }
+      .katex-display,
+      mjx-container[display="true"],
+      .MathJax_Display {
+        display: block;
+        text-align: center;
+        margin: 12px 0;
+        padding: 8px;
+        background: #f8fafc;
+        border-radius: 6px;
+      }
+      .katex-html,
+      .MathJax {
+        font-family: "Cambria Math", "Times New Roman", serif;
+        font-style: italic;
+      }
+      code {
+        background: #f1f5f9;
+        padding: 2px 5px;
+        border-radius: 4px;
+      }
+      pre {
+        background: #0f172a;
+        color: #f8fafc;
+        padding: 12px;
+        border-radius: 8px;
+        overflow-x: auto;
+      }
+      pre code {
+        background: transparent;
+        padding: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>MathsClip — Local Test Playground</h1>
+    <p>
+      Load the extension in <code>chrome://extensions</code>, then test
+      <strong>Ctrl+C</strong>, <strong>Right-Click</strong>, and
+      <strong>Click-to-Copy</strong> (toggleable in popup) on the sections below.
+    </p>
+
+    <section>
+      <h2>1. KaTeX (Inline &amp; Display)</h2>
+      <p>
+        Given Einstein's equation
+        <span class="katex">
+          <span class="katex-mathml">
+            <math><semantics><annotation encoding="application/x-tex">E = mc^2</annotation></semantics></math>
+          </span>
+          <span class="katex-html" aria-hidden="true">E = mc²</span>
+        </span>
+        and a <strong>display integral</strong>:
+      </p>
+      <span class="katex-display">
+        <span class="katex">
+          <span class="katex-mathml">
+            <math display="block"><semantics><annotation encoding="application/x-tex">\int_0^\infty e^{-x^2}\,dx = \frac{\sqrt{\pi}}{2}</annotation></semantics></math>
+          </span>
+          <span class="katex-html" aria-hidden="true">∫₀^∞ e^(−x²) dx = √π / 2</span>
+        </span>
+      </span>
+    </section>
+
+    <section>
+      <h2>2. MathJax v3 / v4 (via window.MathJax MAIN-world bridge)</h2>
+      <p>
+        Consider the quadratic formula:
+        <mjx-container id="mjx-inline-demo" class="MathJax" jax="SVG">
+          <svg width="110" height="22" viewBox="0 0 110 22" style="vertical-align: middle;">
+            <text x="2" y="16" font-family="serif" font-size="14" fill="currentColor">ax² + bx + c = 0</text>
+          </svg>
+        </mjx-container>
+        whose solution is:
+      </p>
+      <mjx-container id="mjx-display-demo" class="MathJax" jax="SVG" display="true">
+        <svg width="180" height="32" viewBox="0 0 180 32">
+          <text x="10" y="22" font-family="serif" font-size="16" fill="currentColor">x = (−b ± √(b² − 4ac)) / 2a</text>
+        </svg>
+      </mjx-container>
+    </section>
+
+    <section>
+      <h2>3. MathJax v2 (Script Pair)</h2>
+      <p>
+        Euler's identity is
+        <span class="MathJax" id="MathJax-Element-1-Frame">e^{i\pi} + 1 = 0</span><script type="math/tex" id="MathJax-Element-1">e^{i\pi} + 1 = 0</script>.
+      </p>
+    </section>
+
+    <section>
+      <h2>4. Wikipedia Maths Image</h2>
+      <p>
+        Bayes' theorem:
+        <span class="mwe-math-element">
+          <img
+            class="mwe-math-fallback-image-inline"
+            alt="{\displaystyle P(A\mid B)={\frac {P(B\mid A)P(A)}{P(B)}}}"
+            src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='26'><text x='4' y='18' font-family='serif' font-size='14'>P(A|B) = P(B|A)P(A) / P(B)</text></svg>"
+          />
+        </span>
+      </p>
+    </section>
+
+    <section>
+      <h2>5. Generic <code>data-latex</code> &amp; Legacy Image Maths</h2>
+      <p>
+        Maxwell's law:
+        <span data-latex="\nabla \cdot \mathbf{E} = \frac{\rho}{\varepsilon_0}" style="font-family: serif; font-style: italic;">∇·E = ρ/ε₀</span>
+        and a CodeCogs/WordPress style image:
+        <img
+          class="latex"
+          alt="\lim_{n\to\infty}\left(1+\frac{1}{n}\right)^n = e"
+          style="vertical-align: middle;"
+          src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='24'><text x='4' y='17' font-family='serif' font-size='14'>lim (1 + 1/n)^n = e</text></svg>"
+        />
+      </p>
+    </section>
+
+    <section>
+      <h2>6. Plain Text (No Maths — Should Copy Normally)</h2>
+      <p>
+        This paragraph contains <em>zero</em> equations, a
+        <a href="https://example.com">sample link</a>, and some
+        <code>inlineCode()</code>. Copying it with Ctrl+C leaves normal browser
+        copying completely untouched.
+      </p>
+      <ul>
+        <li>First item with <strong>bold text</strong></li>
+        <li>Second item with inline maths
+          <span class="katex">
+            <span class="katex-mathml"><math><semantics><annotation encoding="application/x-tex">\alpha + \beta</annotation></semantics></math></span>
+            <span class="katex-html" aria-hidden="true">α + β</span>
+          </span>
+        </li>
+      </ul>
+      <pre><code class="language-js">const x = 42;
+console.log(x);</code></pre>
+    </section>
+
+    <section>
+      <h2>7. Modern Wikipedia (MathJax SVG + <code>data-mw</code> Sibling)</h2>
+      <p>
+        Conditional probability:
+        <span class="mwe-math-mathml-a11y" style="display: none;">
+          <math xmlns="http://www.w3.org/1998/Math/MathML" class="mwe-math-element mwe-math-element-inline mathjax_ignore" data-mw='{"name":"math","attrs":{},"body":{"extsrc":"P(A\\mid B) = \\frac{P(B\\mid A)P(A)}{P(B)}"}}'>
+            <mrow><mi>P</mi></mrow>
+          </math>
+        </span>
+        <mjx-container class="MathJax" jax="SVG">
+          <svg width="210" height="36" viewBox="0 0 210 36" style="vertical-align: middle;">
+            <g class="mwe-math-element">
+              <text x="4" y="23" font-family="serif" font-size="14" fill="currentColor">P(A | B) = P(B | A)P(A) / P(B)</text>
+            </g>
+          </svg>
+        </mjx-container>
+        from Bayes' theorem.
+      </p>
+    </section>
+
+    <section>
+      <h2>8. Paste Playground &amp; Editable Safety Check</h2>
+      <p>
+        Paste selections above into the rich box (tests <code>text/html</code> in Plain Text mode) or the plain box (tests <code>text/plain</code> / Markdown). Copying or clicking inside editable boxes stays untouched:
+      </p>
+      <div
+        id="paste-rich"
+        contenteditable="true"
+        style="border: 1px dashed #94a3b8; border-radius: 6px; padding: 10px 12px; min-height: 54px; margin-bottom: 10px; background: #fff;"
+      >Editable rich zone — click and press Ctrl+V here, or copy <span data-latex="x^2">x² (editable)</span> to verify editable elements are left alone.</div>
+      <textarea
+        id="paste-plain"
+        rows="4"
+        style="width: 100%; box-sizing: border-box; font-family: ui-monospace, monospace; font-size: 13px; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px;"
+        placeholder="Plain-text paste box (Ctrl+V here for Plain Text or Markdown output)..."
+      ></textarea>
+    </section>
+
+    <script>
+      // Simulate MathJax v3 in-memory structure for testing main-world.js
+      window.MathJax = {
+        startup: {
+          document: {
+            math: [
+              {
+                math: "ax^2 + bx + c = 0",
+                display: false,
+                inputJax: { name: "TeX" },
+                typesetRoot: document.getElementById("mjx-inline-demo"),
+              },
+              {
+                math: "x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}",
+                display: true,
+                inputJax: { name: "TeX" },
+                typesetRoot: document.getElementById("mjx-display-demo"),
+              },
+            ],
+          },
+        },
+      };
+    </script>
+  </body>
+</html>

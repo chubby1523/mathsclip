@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>MathsClip Settings</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="popup">
+      <header class="head">
+        <img class="logo" src="../../icons/icon.svg" width="34" height="34" alt="" />
+        <div>
+          <h1 class="name">MathsClip</h1>
+          <p class="tag">Copy maths from any page as clean LaTeX</p>
+        </div>
+      </header>
+
+      <p class="tip">
+        Select maths and press <kbd><kbd>Ctrl</kbd>+<kbd>C</kbd></kbd>, or right-click an equation.
+      </p>
+
+      <fieldset class="section">
+        <legend class="section-head">Capture</legend>
+
+        <label class="row">
+          <span class="row-text">
+            <span class="row-title">Auto-intercept <kbd><kbd>Ctrl</kbd>+<kbd>C</kbd></kbd></span>
+            <span class="row-desc">Converts maths in selections; normal text untouched</span>
+          </span>
+          <input id="interceptCopy" type="checkbox" />
+        </label>
+
+        <label class="row">
+          <span class="row-text">
+            <span class="row-title">Right-click menu</span>
+            <span class="row-desc">Copy selection or the equation under the cursor</span>
+          </span>
+          <input id="contextMenuEnabled" type="checkbox" />
+        </label>
+
+        <label class="row">
+          <span class="row-text">
+            <span class="row-title">Override MathJax menu</span>
+            <span class="row-desc">Show Chrome&rsquo;s menu instead of MathJax&rsquo;s popup</span>
+          </span>
+          <input id="overrideMathJaxMenu" type="checkbox" />
+        </label>
+
+        <label class="row">
+          <span class="row-text">
+            <span class="row-title">Click-to-Copy on hover</span>
+            <span class="row-desc">Highlight equations, click to copy</span>
+          </span>
+          <input id="clickToCopy" type="checkbox" />
+        </label>
+
+        <label class="row">
+          <span class="row-text">
+            <span class="row-title">Copy confirmation toast</span>
+            <span class="row-desc">Brief notice when LaTeX is copied</span>
+          </span>
+          <input id="showToast" type="checkbox" />
+        </label>
+      </fieldset>
+
+      <fieldset class="section">
+        <legend class="section-head">Output formatting</legend>
+
+        <div class="option" role="radiogroup" aria-labelledby="fmt-label">
+          <div class="option-label" id="fmt-label">Selection copy format</div>
+          <div class="option-group">
+            <label class="opt"><input type="radio" name="selectionFormat" value="plain" />Plain text + LaTeX</label>
+            <label class="opt"><input type="radio" name="selectionFormat" value="markdown" />Markdown + LaTeX</label>
+          </div>
+        </div>
+
+        <div class="option" role="radiogroup" aria-labelledby="delim-label">
+          <div class="option-label" id="delim-label">Maths delimiters</div>
+          <div class="option-group">
+            <label class="opt"><input type="radio" name="delimiters" value="dollar" /><code>$...$ / $$...$$</code></label>
+            <label class="opt"><input type="radio" name="delimiters" value="parens" /><code>\(...\) / \[...\]</code></label>
+          </div>
+        </div>
+
+        <div class="option" role="radiogroup" aria-labelledby="wrap-label">
+          <div class="option-label" id="wrap-label">Single equation copy</div>
+          <div class="option-group">
+            <label class="opt"><input type="radio" name="singleEquationWrap" value="raw" />Raw LaTeX</label>
+            <label class="opt"><input type="radio" name="singleEquationWrap" value="delimited" />With delimiters</label>
+          </div>
+        </div>
+      </fieldset>
+
+      <footer class="footer">
+        <p class="footer-note">Text without maths copies as normal.</p>
+        <nav class="footer-links" aria-label="Extension links">
+          <a href="https://github.com/chubby1523/mathsclip#readme" target="_blank" rel="noopener noreferrer">How to use</a>
+          <span aria-hidden="true">&middot;</span>
+          <a href="https://github.com/chubby1523/mathsclip/issues/new/choose" target="_blank" rel="noopener noreferrer">Report a problem</a>
+        </nav>
+      </footer>
+    </main>
+
+    <script src="../defaults.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>
