@@ -4,7 +4,7 @@ A Chrome extension that copies maths from web pages as LaTeX.
 
 Copy an equation from Wikipedia or a ChatGPT answer and you normally get a jumble of symbols, often with each one on its own line. MathsClip gives you the LaTeX source instead, ready to paste into Overleaf, Obsidian or your notes.
 
-<!-- TODO: add an "Add to Chrome" link here once the store listing is live -->
+**[Add to Chrome](https://chromewebstore.google.com/detail/anoahpnibjpbjbhklpknelhdflicbcgg)** · [Website](https://alexmiao.com/projects/mathsclip/) · [How to use](https://alexmiao.com/projects/mathsclip/how-to/)
 
 ![A normal copy jumbles the formula; MathsClip gives you the LaTeX](.github/screenshot.png)
 
