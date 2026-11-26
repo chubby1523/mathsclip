@@ -11,6 +11,7 @@
     contextMenuEnabled: true,
     overrideMathJaxMenu: false,
     clickToCopy: false,
+    wikiInlineSymbols: true, // Wikipedia {{math}} HTML (ε<sub>0</sub>) rebuilt as LaTeX
     selectionFormat: "plain", // "plain" | "markdown"
     delimiters: "dollar", // "dollar" ($...$ / $$...$$) | "parens" (\(...\) / \[...\])
     singleEquationWrap: "raw", // "raw" | "delimited"

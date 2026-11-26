@@ -20,6 +20,8 @@
     "mwe-math-fallback-image-block",
   ];
   const toSelector = (classes) => classes.map((c) => `.${c}`);
+  // Matched in code, not a selector: in CSS, img[alt="\oiint"] would read the backslash as an escape.
+  const WIKI_INTEGRALS = new Set(["\\oint", "\\oiint", "\\oiiint"]);
 
   const MATH_ROOT_SELECTOR = [
     ...toSelector(KATEX_CLASSES),
@@ -34,6 +36,8 @@
     "[data-math]",
     "[data-xpm-copy-root]",
     "math",
+    ".texhtml",
+    "span.nowrap", // only Wikipedia integral templates count; others are climbed past
   ].join(",");
 
   const WIKI_IMAGE_SELECTOR =
@@ -122,6 +126,10 @@
       const outerGoogle = candidate.closest("[data-xpm-copy-root]");
       if (outerGoogle) return outerGoogle;
 
+      // The pieces of a Wikipedia integral template belong to the whole equation.
+      const outerIntegral = candidate.closest("span.nowrap");
+      if (outerIntegral && extractWikiIntegral(outerIntegral)) return outerIntegral;
+
       const outerWiki = candidate.closest(".mwe-math-element");
       if (outerWiki) {
         if (outerWiki.tagName?.toLowerCase() === "g") {
@@ -148,7 +156,8 @@
       if (
         tag !== "math" &&
         !isKnownMathContainer(candidate) &&
-        !extractDataAttributeMath(candidate)
+        !extractDataAttributeMath(candidate) &&
+        !extractTexHtml(candidate)
       ) {
         cur = candidate.parentElement;
         continue;
@@ -173,9 +182,17 @@
 
   function readDataMwMath(scopeEl) {
     if (!scopeEl) return null;
-    const target = scopeEl.hasAttribute?.("data-mw")
+    let target = scopeEl.hasAttribute?.("data-mw")
       ? scopeEl
       : scopeEl.querySelector?.("[data-mw]");
+    if (!target) {
+      // Wikidata-linked equations (<math qid=…>): the TeX sits on another element sharing the
+      // same Parsoid `about` id. Look it up in the page, which also works for a copied fragment.
+      const about = scopeEl.getAttribute?.("about") || scopeEl.querySelector?.("[about]")?.getAttribute("about");
+      if (about && /^#mwt\d+$/.test(about)) {
+        target = scopeEl.ownerDocument?.querySelector?.(`[about="${about}"][data-mw]`);
+      }
+    }
     const rawJson = target?.getAttribute?.("data-mw");
     if (!rawJson) return null;
     try {
@@ -195,6 +212,42 @@
     } catch {
       return null;
     }
+  }
+
+  // Wikipedia's {{oint}} / {{oiint}} / {{oiiint}}: a <span class="nowrap"> holding an image of the
+  // integral sign (alt="\oiint") between separate <math> pieces, the subscript in a shifted span.
+  // Read the pieces in page order. (data-mw has the template call too, but not when it's nested in another template.)
+  function extractWikiIntegral(box) {
+    const images = Array.from(box.querySelectorAll?.("img") || []);
+    if (tagOf(box) !== "span" || !images.some((img) => WIKI_INTEGRALS.has(img.getAttribute("alt")))) return null;
+    const pieces = [];
+    const walk = (node) => {
+      if (node.nodeType === 3) {
+        if (node.textContent.trim()) throw new Error("text between the pieces");
+        return;
+      }
+      if (node.nodeType !== 1 || tagOf(node) === "mjx-container") return;
+      if (tagOf(node) === "img") {
+        if (!WIKI_INTEGRALS.has(node.getAttribute("alt"))) throw new Error("other image");
+        pieces.push(node.getAttribute("alt"));
+        return;
+      }
+      if (tagOf(node) === "math") {
+        const tex = cleanWikiTex(extractStandaloneMathML(node)?.tex || "").replace(/^\\(?:scriptstyle|textstyle)\s*/, "");
+        if (!tex) throw new Error("piece without TeX");
+        const shifted = node.closest('span[style*="top:"]');
+        pieces.push(shifted && !/^[_^]/.test(tex) ? `_{${tex}}` : tex);
+        return;
+      }
+      Array.from(node.childNodes || []).forEach(walk);
+    };
+    try {
+      Array.from(box.childNodes || []).forEach(walk);
+    } catch {
+      return null;
+    }
+    const tex = pieces.reduce((out, p) => (/^[_^]/.test(p) ? out + p : out ? `${out} ${p}` : p), "");
+    return { tex, displayMode: Boolean(box.closest?.("dd")) };
   }
 
   function extractKatex(rootEl) {
@@ -240,16 +293,18 @@
     }
 
     // Skip unscrolled MathJax lazy placeholder containers so the visible sibling <math> handles extraction once.
+    // (A sibling hidden in .mwe-math-mathml-a11y isn't copied, so then the container must answer for it.)
+    const prev = rootEl.previousElementSibling;
     if (
       rootEl.querySelector?.("mjx-lazy") &&
       !rootEl.querySelector?.("svg, mjx-math") &&
-      !rootEl.getAttribute("data-cm-tex")
+      !rootEl.getAttribute("data-cm-tex") &&
+      !prev?.classList?.contains("mwe-math-mathml-a11y")
     ) {
       return null;
     }
 
     // Fallback for Wikipedia 2026 MathJax SVG: hidden sibling <span><math>...</math></span> right before <mjx-container>
-    const prev = rootEl.previousElementSibling;
     if (prev && (prev.tagName?.toLowerCase() === "math" || prev.querySelector?.("math, .mwe-math-element"))) {
       const mw = readDataMwMath(prev);
       if (mw) {
@@ -363,6 +418,139 @@
         (rootEl.closest && rootEl.closest("dl > dd") && !rootEl.previousSibling?.textContent?.trim())
     );
     return { tex, displayMode };
+  }
+
+  // Wikipedia's {{math}} / {{mvar}} templates: HTML maths (<i>ε</i><sub>0</sub>) with no TeX source.
+  const TEXHTML_SYMBOLS = {
+    α: "\\alpha", β: "\\beta", γ: "\\gamma", δ: "\\delta", ε: "\\varepsilon", ϵ: "\\epsilon",
+    ζ: "\\zeta", η: "\\eta", θ: "\\theta", ϑ: "\\vartheta", ι: "\\iota", κ: "\\kappa",
+    λ: "\\lambda", μ: "\\mu", ν: "\\nu", ξ: "\\xi", ο: "o", π: "\\pi", ρ: "\\rho", ϱ: "\\varrho",
+    σ: "\\sigma", ς: "\\varsigma", τ: "\\tau", υ: "\\upsilon", φ: "\\varphi", ϕ: "\\phi",
+    χ: "\\chi", ψ: "\\psi", ω: "\\omega",
+    Γ: "\\Gamma", Δ: "\\Delta", Θ: "\\Theta", Λ: "\\Lambda", Ξ: "\\Xi", Π: "\\Pi", Σ: "\\Sigma",
+    Υ: "\\Upsilon", Φ: "\\Phi", Ψ: "\\Psi", Ω: "\\Omega",
+    "−": "-", "–": "-", "×": "\\times", "⋅": "\\cdot", "·": "\\cdot", "∗": "*", "÷": "\\div",
+    "±": "\\pm", "∓": "\\mp", "⁄": "/", "∕": "/",
+    "≤": "\\le", "≥": "\\ge", "≠": "\\neq", "≈": "\\approx", "≡": "\\equiv", "∼": "\\sim",
+    "≃": "\\simeq", "≅": "\\cong", "∝": "\\propto", "≪": "\\ll", "≫": "\\gg",
+    "∈": "\\in", "∉": "\\notin", "∋": "\\ni", "⊂": "\\subset", "⊆": "\\subseteq",
+    "⊃": "\\supset", "⊇": "\\supseteq", "∪": "\\cup", "∩": "\\cap", "∅": "\\emptyset",
+    "∖": "\\setminus", "∀": "\\forall", "∃": "\\exists", "¬": "\\neg", "∧": "\\land", "∨": "\\lor",
+    "→": "\\to", "←": "\\leftarrow", "↦": "\\mapsto", "⇒": "\\Rightarrow", "⇔": "\\Leftrightarrow",
+    "↔": "\\leftrightarrow",
+    "∇": "\\nabla", "∂": "\\partial", "∞": "\\infty", "∑": "\\sum", "∏": "\\prod", "∫": "\\int",
+    "∮": "\\oint", "√": "\\surd", "∘": "\\circ", "⊗": "\\otimes", "⊕": "\\oplus", "†": "\\dagger",
+    "⊥": "\\perp", "∥": "\\parallel", "∣": "\\mid", "‖": "\\|", "∠": "\\angle", "°": "^\\circ",
+    "⌊": "\\lfloor", "⌋": "\\rfloor", "⌈": "\\lceil", "⌉": "\\rceil", "◻": "\\Box", "□": "\\Box",
+    ƒ: "f", "′": "'", "″": "''", "‴": "'''", "⟨": "\\langle", "⟩": "\\rangle", "…": "\\ldots", "⋯": "\\cdots",
+    ℏ: "\\hbar", ℓ: "\\ell", ℵ: "\\aleph", "ℂ": "\\mathbb{C}", "ℝ": "\\mathbb{R}", "ℕ": "\\mathbb{N}",
+    "ℤ": "\\mathbb{Z}", "ℚ": "\\mathbb{Q}",
+    "{": "\\{", "}": "\\}", "%": "\\%", "#": "\\#", "&": "\\&", "$": "\\$", _: "\\_", "\\": "\\backslash",
+    "~": "\\sim", "^": "\\hat{}",
+  };
+  const TEXHTML_OPERATORS = new Set([
+    "sin", "cos", "tan", "cot", "sec", "csc", "sinh", "cosh", "tanh", "arcsin", "arccos", "arctan",
+    "log", "ln", "lg", "exp", "det", "dim", "ker", "deg", "gcd", "lim", "max", "min", "sup", "inf",
+    "arg", "Pr",
+  ]);
+  const TEXHTML_ACCENTS = {
+    "\u0302": "\\hat", "\u0303": "\\tilde", "\u0304": "\\bar", "\u0305": "\\bar",
+    "\u0307": "\\dot", "\u0308": "\\ddot", "\u20d7": "\\vec",
+  };
+  // Marks the end of a \command; becomes a space only where a letter follows.
+  const CMD_END = "\u0001";
+  const TEXHTML_SPACE = /[\s\u00a0\u2009\u200a\u200b\u200d\u202f\u2060]/;
+  const TEXHTML_SKIP_TAGS = new Set(["style", "link", "script"]);
+
+  // Returns TeX, or throws on anything it can't map so the span stays plain text instead of half-converted.
+  function texHtmlToTex(node, italic) {
+    if (node.nodeType === 3) {
+      let out = "";
+      // Lone upright letters are almost always variables missing their '' italics, so they stay bare.
+      const letters = (word) =>
+        italic || word.length < 2
+          ? word
+          : TEXHTML_OPERATORS.has(word) ? `\\${word}${CMD_END}`
+          : word === "Re" || word === "Im" ? `\\operatorname{${word}}` : `\\mathrm{${word}}`;
+      // Split ŷ into y + U+0302 so accents are handled in one place (but leave ≠ alone).
+      const text = (node.textContent || "").replace(/[À-ɏ]/g, (c) => c.normalize("NFD"));
+      for (let i = 0; i < text.length; ) {
+        const ch = text[i];
+        if (/[A-Za-z]/.test(ch)) {
+          const word = text.slice(i).match(/^[A-Za-z]+/)[0];
+          i += word.length;
+          const accent = TEXHTML_ACCENTS[text[i]];
+          if (accent) {
+            i++;
+            out += `${letters(word.slice(0, -1))}${accent}{${letters(word.slice(-1)).trim()}}`;
+          } else out += letters(word);
+          continue;
+        }
+        i++;
+        if (TEXHTML_SPACE.test(ch)) out += " ";
+        else if (TEXHTML_SYMBOLS[ch]) out += TEXHTML_SYMBOLS[ch] + (/[a-z]$/i.test(TEXHTML_SYMBOLS[ch]) ? CMD_END : "");
+        else if (/[0-9+=()[\],.;:/<>|!?'*@"-]/.test(ch)) out += ch;
+        else throw new Error(`texhtml: unmapped ${ch}`);
+      }
+      return out;
+    }
+    if (node.nodeType !== 1) return "";
+
+    const tag = tagOf(node);
+    const cls = node.classList;
+    if (TEXHTML_SKIP_TAGS.has(tag) || cls?.contains("sr-only") || cls?.contains("error")) return "";
+    if (isWikiMath(node)) {
+      const nested = tag === "math" ? extractStandaloneMathML(node) : extractWikiMath(node);
+      if (!nested) throw new Error("texhtml: nested math without TeX");
+      return `{${cleanWikiTex(nested.tex)}}`;
+    }
+    const inner = (it = italic) =>
+      Array.from(node.childNodes || [], (c) => texHtmlToTex(c, it)).join("");
+
+    if (tag === "i" || tag === "em" || tag === "var") return inner(true);
+    if (tag === "b" || tag === "strong") {
+      // \mathbf is already upright, so letters go in bare; Greek needs \boldsymbol.
+      const body = inner(true).trim();
+      return body.includes("\\") ? `\\boldsymbol{${body}}` : `\\mathbf{${body}}`;
+    }
+    if (tag === "sub" || tag === "sup") {
+      const body = inner().trim();
+      return `${tag === "sub" ? "_" : "^"}${body.length === 1 ? body : `{${body}}`}`;
+    }
+    if (tag === "br") return " ";
+    if (cls?.contains("sfrac")) {
+      const num = node.querySelector(".num");
+      const den = node.querySelector(".den");
+      if (!num || !den) throw new Error("texhtml: unknown sfrac layout");
+      return `\\frac{${texHtmlToTex(num, italic).trim()}}{${texHtmlToTex(den, italic).trim()}}`;
+    }
+    // MathJax's rendering of a nested equation; its TeX comes from the hidden <math> beside it.
+    if (tag === "mjx-container") {
+      if (node.previousElementSibling?.querySelector?.("math")) return "";
+      const rendered = extractMathJaxV3(node);
+      if (!rendered) throw new Error("texhtml: unreadable MathJax");
+      return `{${rendered.tex}}`;
+    }
+    if (tag === "span" || tag === "a") return inner();
+    throw new Error(`texhtml: unmapped <${tag}>`);
+  }
+
+  // Set by content.js from the "Wikipedia text-style maths" setting.
+  const options = { wikiInlineSymbols: true };
+
+  function extractTexHtml(rootEl) {
+    if (!options.wikiInlineSymbols || !rootEl.classList?.contains("texhtml")) return null;
+    try {
+      const tex = texHtmlToTex(rootEl, rootEl.classList.contains("mvar"))
+        .replace(/\u0001(?=[A-Za-z])/g, " ")
+        .replace(/\u0001/g, "")
+        .replace(/\s+/g, " ")
+        .replace(/ (?=[_^}])/g, "")
+        .trim();
+      return tex ? { tex, displayMode: false } : null;
+    } catch {
+      return null;
+    }
   }
 
   function extractStandaloneMathML(rootEl) {
@@ -501,6 +689,10 @@
       result = extractGoogleMath(rootEl);
     } else if (tag === "math") {
       result = extractStandaloneMathML(rootEl);
+    } else if (rootEl.classList?.contains("texhtml")) {
+      result = extractTexHtml(rootEl);
+    } else if (rootEl.classList?.contains("nowrap")) {
+      result = extractWikiIntegral(rootEl);
     } else if (
       rootEl.hasAttribute("data-latex") ||
       rootEl.hasAttribute("data-tex") ||
@@ -510,7 +702,39 @@
     }
 
     if (!result || !result.tex) return null;
+    // {{oiint}} on its own, with the rest written as the next <math>: "{\vphantom{\int}}_{∂Ω} E·dS = …".
+    // The invisible integral only places the subscript, so put the real one back in its place.
+    if (INTEGRAL_TAIL.test(result.tex)) {
+      const lead = integralLeadBefore(rootEl);
+      if (lead) {
+        const tail = result.tex.replace(INTEGRAL_TAIL, "").replace(/^([_^])\{\s*\\(?:scriptstyle|textstyle)\s*/, "$1{");
+        return { ...result, tex: lead + tail, rootEl, tookIntegral: true };
+      }
+    }
     return { ...result, rootEl };
+  }
+
+  const INTEGRAL_TAIL = /^\{?\s*\\vphantom\s*\{\\o?i+nt\}\s*\}?\s*(?=[_^])/;
+
+  /** The integral sign of an image-only {{oiint}} just before el (hidden a11y copies skipped), or null. */
+  function integralLeadBefore(el) {
+    let prev = el.previousSibling;
+    while (prev && ((prev.nodeType === 3 && !prev.textContent.trim()) || prev.classList?.contains("mwe-math-mathml-a11y"))) {
+      prev = prev.previousSibling;
+    }
+    if (prev?.nodeType !== 1 || !prev.classList?.contains("nowrap")) return null;
+    const tex = extractWikiIntegral(prev)?.tex;
+    return WIKI_INTEGRALS.has(tex) ? tex : null;
+  }
+
+  /** True for an image-only {{oiint}} whose next equation takes it in, so it isn't copied twice. */
+  function isIntegralLead(el) {
+    if (!el.classList?.contains("nowrap") || !WIKI_INTEGRALS.has(extractWikiIntegral(el)?.tex)) return false;
+    let next = el.nextSibling;
+    while (next && ((next.nodeType === 3 && !next.textContent.trim()) || next.classList?.contains("mwe-math-mathml-a11y"))) {
+      next = next.nextSibling;
+    }
+    return next?.nodeType === 1 && extractMath(next)?.tookIntegral === true;
   }
 
   /**
@@ -551,11 +775,13 @@
 
   CopyMath.extractors = {
     MATH_ROOT_SELECTOR,
+    options,
     requestMainWorldSync,
     cleanWikiTex,
     findMathRoot,
     isMathJaxRoot,
     extractMath,
+    isIntegralLead,
     selectionContainsMath,
   };
 

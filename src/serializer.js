@@ -33,6 +33,8 @@
     "mjx-assistive-mml",
   ]);
 
+  const UNCOPYABLE_ATTR = "data-mathsclip-skip";
+
   const DOUBLE_NEWLINE_BLOCKS = new Set([
     "p",
     "section",
@@ -81,7 +83,8 @@
     ) {
       return true;
     }
-    if (el.hasAttribute?.("hidden")) return true;
+    if (el.hasAttribute?.("hidden") || el.hasAttribute?.(UNCOPYABLE_ATTR)) return true;
+    if (getDeps().extractors.isIntegralLead(el)) return true; // copied as part of the next equation
     if (
       el.style?.display === "none" ||
       /display\s*:\s*none/i.test(el.getAttribute?.("style") || "")
@@ -139,10 +142,48 @@
     const parts = [];
     for (let i = 0; i < selection.rangeCount; i++) {
       const expanded = expandRangeForMath(selection.getRangeAt(i));
-      const out = fn(expanded.cloneContents());
+      const marked = markUncopyable(expanded);
+      let fragment;
+      try {
+        fragment = expanded.cloneContents();
+      } finally {
+        for (const el of marked) el.removeAttribute(UNCOPYABLE_ATTR);
+      }
+      const out = fn(fragment);
       if (out) parts.push(out);
     }
     return parts;
+  }
+
+  /**
+   * The copy is built from a clone of the selection, and clones carry no styles. So before cloning,
+   * tag the live elements the browser's own copy leaves out (display: none or user-select: none from
+   * a stylesheet: Wikipedia's [edit] links, collapsed navboxes, show/hide toggles), and untag them
+   * straight after. Maths is never tagged: its TeX is what we're copying, however it's styled.
+   * @param {Range} range
+   * @returns {Element[]} the elements tagged
+   */
+  function markUncopyable(range) {
+    const { extractors } = getDeps();
+    const top = range.commonAncestorContainer;
+    const view = top?.ownerDocument?.defaultView;
+    if (!view?.getComputedStyle || !top.isConnected) return [];
+
+    const marked = [];
+    const visit = (el) => {
+      for (const child of el.children) {
+        if (!range.intersectsNode(child)) continue;
+        const style = view.getComputedStyle(child);
+        if ((style.display === "none" || style.userSelect === "none") && !extractors.findMathRoot(child)) {
+          child.setAttribute(UNCOPYABLE_ATTR, "");
+          marked.push(child);
+        } else {
+          visit(child);
+        }
+      }
+    };
+    visit(top.nodeType === 1 ? top : top.parentElement);
+    return marked;
   }
 
   function serializeChildren(node, ctx) {
@@ -189,11 +230,17 @@
   }
 
   function serializeTable(tableEl, ctx) {
-    const rows = Array.from(tableEl.querySelectorAll?.("tr") || []);
+    // This table's own rows only: a nested table's rows are copied with the cell that holds it.
+    const children = (el) => Array.from(el.children || []).filter((c) => !shouldSkipElement(c));
+    const rows = children(tableEl).flatMap((c) => {
+      const t = c.tagName?.toLowerCase();
+      if (t === "tr") return [c];
+      return t === "thead" || t === "tbody" || t === "tfoot" ? children(c).filter((r) => r.tagName?.toLowerCase() === "tr") : [];
+    });
     if (rows.length === 0) return "";
 
     const matrix = rows.map((tr) =>
-      Array.from(tr.children || [])
+      children(tr)
         .filter((c) => {
           const t = c.tagName?.toLowerCase();
           return t === "td" || t === "th";

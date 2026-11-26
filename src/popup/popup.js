@@ -6,6 +6,7 @@
     "contextMenuEnabled",
     "overrideMathJaxMenu",
     "clickToCopy",
+    "wikiInlineSymbols",
     "showToast",
   ];
 

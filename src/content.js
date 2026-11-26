@@ -749,6 +749,7 @@
     try {
       const loaded = await getSettings();
       settings = loaded;
+      extractors.options.wikiInlineSymbols = settings.wikiInlineSymbols;
       if (!settings.clickToCopy) hideHoverUI();
     } catch {
       // Keep default settings on failure.
@@ -762,6 +763,7 @@
       for (const [key, change] of Object.entries(changes)) {
         settings[key] = change.newValue;
       }
+      extractors.options.wikiInlineSymbols = settings.wikiInlineSymbols;
       if (!settings.clickToCopy) {
         hideHoverUI();
       }

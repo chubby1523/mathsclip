@@ -37,6 +37,15 @@ class MockNode {
     while (cur.parentNode) cur = cur.parentNode;
     return cur;
   }
+  get previousSibling() {
+    const siblings = this.parentNode?.childNodes || [];
+    return siblings[siblings.indexOf(this) - 1] || null;
+  }
+  get nextSibling() {
+    const siblings = this.parentNode?.childNodes || [];
+    const idx = siblings.indexOf(this);
+    return idx >= 0 ? siblings[idx + 1] || null : null;
+  }
   get nextElementSibling() {
     if (!this.parentNode) return null;
     const siblings = this.parentNode.childNodes;
@@ -229,6 +238,9 @@ class MockElement extends MockNode {
   hasAttribute(name) {
     return Object.prototype.hasOwnProperty.call(this.attrs, name);
   }
+  removeAttribute(name) {
+    delete this.attrs[name];
+  }
   get children() {
     return this.childNodes.filter((n) => n.nodeType === 1);
   }
@@ -318,6 +330,15 @@ class MockDocument extends MockNode {
     const node = new MockText(text);
     node.ownerDocument = this;
     return node;
+  }
+  querySelector(sel) {
+    for (const c of this.childNodes) {
+      if (c.nodeType !== 1) continue;
+      if (matchesSelector(c, sel)) return c;
+      const found = c.querySelector(sel);
+      if (found) return found;
+    }
+    return null;
   }
   getElementById(id) {
     const walk = (n) => {
@@ -971,4 +992,197 @@ test("Ctrl+C leaves copies without maths, and copies inside editors, untouched",
     delete globalThis.window;
     delete globalThis.document;
   }
+});
+
+test("Wikipedia {{math}} / {{mvar}} HTML (span.texhtml) is rebuilt as LaTeX", () => {
+  const tx = (...children) => el("span", { class: "texhtml " }, ...children);
+  const sfrac = (num, den) =>
+    el("span", { class: "sfrac" }, el("span", {}, "\u2060"),
+      el("span", { class: "tion" }, el("span", { class: "num" }, ...num), el("span", { class: "sr-only" }, "/"), el("span", { class: "den" }, ...den)),
+      el("span", {}, "\u2060"));
+  const cases = [
+    [tx(el("i", {}, "ε"), el("sub", {}, "0")), "\\varepsilon_0"],
+    [tx(el("b", {}, "E")), "\\mathbf{E}"],
+    [el("span", { class: "texhtml mvar", style: "font-style:italic;" }, "ρ"), "\\rho"],
+    [tx("∇×"), "\\nabla\\times"],
+    [tx("d", el("i", {}, "V")), "dV"],
+    [tx("Φ", el("sub", {}, el("i", {}, "B"))), "\\Phi_B"],
+    [tx(el("i", {}, "k"), el("sub", {}, "B")), "k_B"],
+    [tx(el("i", {}, "m"), el("sub", {}, "u"), " ≠ ", el("i", {}, "σ"), " = 0 ± 1"), "m_u \\neq \\sigma = 0 \\pm 1"],
+    [tx("sinc(x) = log", el("sub", {}, "2"), " x"), "\\mathrm{sinc}(x) = \\log_2 x"],
+    [tx(el("i", {}, "a"), el("sup", {}, "2"), " + ", el("i", {}, "b"), el("sup", {}, "2"), " = ", el("i", {}, "c"), el("sup", {}, "2")), "a^2 + b^2 = c^2"],
+    [tx(el("b", {}, "E"), " = ", el("b", {}, "E"), el("sub", {}, "0"), " sin(−", el("i", {}, "ωt"), " + ", el("b", {}, "k"), " ⋅ ", el("b", {}, "r"), ")"),
+      "\\mathbf{E} = \\mathbf{E}_0 \\sin(-\\omega t + \\mathbf{k} \\cdot \\mathbf{r})"],
+    [tx("2", el("sup", {}, "2", el("sup", {}, el("i", {}, "n"))), el("span", {}, "\u00a0"), "+", el("span", {}, "\u00a0"), "1"), "2^{2^n} + 1"],
+    [tx(el("i", {}, "β"), el("sub", {}, "1"), " = ", el("strong", { class: "error" }, "Page Template:Sfrac/styles.css has no content."), sfrac(["1"], [el("i", {}, "K"), el("sub", {}, "2")])),
+      "\\beta_1 = \\frac{1}{K_2}"],
+    [tx(el("b", {}, "γ"), " = (", el("i", {}, "γ"), el("sup", {}, "1"), ", …)"), "\\boldsymbol{\\gamma} = (\\gamma^1, \\ldots)"],
+    [tx(el("b", {}, "E′"), " = ", el("b", {}, "E"), " + ", el("b", {}, "v"), " × ", el("b", {}, "B")), "\\mathbf{E'} = \\mathbf{E} + \\mathbf{v} \\times \\mathbf{B}"],
+    [tx("{", el("i", {}, "s"), " ∈ ", el("math", { class: "mwe-math-element", alttext: "{\\displaystyle \\mathbb {C} }" }, el("mi", {}, "ℂ")), " | Re(", el("i", {}, "s"), ") = 1/2}"),
+      "\\{s \\in {\\mathbb {C}} | \\operatorname{Re}(s) = 1/2\\}"],
+  ];
+  cases.push(
+    [tx(el("i", {}, "f̂"), "(", el("i", {}, "ξ"), ")"), "\\hat{f}(\\xi)"],
+    [tx(el("span", {}, "⌊"), el("i", {}, "x"), el("span", {}, "⌋")), "\\lfloor x\\rfloor"]
+  );
+  for (const [node, tex] of cases) {
+    const res = extractors.extractMath(node);
+    assert.equal(res?.tex, tex);
+    assert.equal(res.displayMode, false);
+  }
+
+  // Markup it can't map (Fourier transform's stacked-hat trick) stays plain text, not half-converted.
+  const hat = tx(el("span", { class: "sfrac nowrap;" }, el("span", {}, el("span", {}, "＾"), el("span", {}, el("i", {}, "f")))));
+  assert.equal(extractors.findMathRoot(hat), null);
+  assert.equal(extractors.extractMath(hat), null);
+
+  // Selection copy, and hover/click (findMathRoot from inside the span), both see it.
+  const eps = tx(el("i", {}, "ε"), el("sub", {}, "0"));
+  assert.equal(extractors.findMathRoot(eps.childNodes[0].childNodes[0]), eps);
+  assert.equal(
+    serializer.serializeFragment(new MockFragment([el("p", {}, "the permittivity of free space, ", eps, ", and")]), { selectionFormat: "plain", delimiters: "dollar" }),
+    "the permittivity of free space, $\\varepsilon_0$, and"
+  );
+
+  // Turning the setting off makes these spans ordinary text again, for every copy path.
+  extractors.options.wikiInlineSymbols = false;
+  try {
+    assert.equal(extractors.findMathRoot(eps), null);
+    assert.equal(extractors.extractMath(eps), null);
+  } finally {
+    extractors.options.wikiInlineSymbols = true;
+  }
+  assert.equal(defaults.DEFAULTS.wikiInlineSymbols, true);
+});
+
+test("Wikidata-linked Wikipedia equations read their TeX from the element sharing their about id", () => {
+  // Harmonic oscillator: <math qid=…> puts data-mw on a separate span; the <math> only has about=.
+  const doc = new MockDocument();
+  const holder = el("span", {
+    about: "#mwt40",
+    typeof: "mw:Extension/math",
+    "data-mw": JSON.stringify({ name: "math", attrs: { display: "block", qid: "Q834020" }, body: { extsrc: "\\omega = \\sqrt{\\frac k m}." } }),
+  });
+  const math = el("math", { class: "mwe-math-element mwe-math-element-block", display: "block", about: "#mwt40" }, el("mi", {}, "ω"));
+  const mjx = el("mjx-container", { class: "MathJax" }, el("mjx-lazy", {}));
+  const p = el("p", {}, "The angular frequency is ", el("span", { class: "mwe-math-mathml-a11y", style: "display: none;" }, math), mjx);
+  doc.appendChild(holder);
+  doc.appendChild(p);
+
+  assert.equal(extractors.findMathRoot(math), math);
+  assert.deepEqual(
+    { tex: extractors.extractMath(mjx).tex, displayMode: extractors.extractMath(mjx).displayMode },
+    { tex: "\\omega = \\sqrt{\\frac k m}.", displayMode: true }
+  );
+  // A copied fragment keeps the about id and still finds the TeX in the page.
+  const frag = new MockFragment([p.cloneNode(true)]);
+  frag.ownerDocument = doc;
+  assert.equal(
+    serializer.serializeFragment(frag, { selectionFormat: "plain", delimiters: "dollar" }),
+    "The angular frequency is\n\n$$\n\\omega = \\sqrt{\\frac k m}.\n$$"
+  );
+});
+
+test("Wikipedia {{oiint}} (integral-sign image between <math> pieces) copies as one equation", () => {
+  // Trimmed from Gauss's law: a11y <math> pieces, MathJax containers and the ∯ image.
+  const wikiMath = (tex) =>
+    el("span", { class: "mwe-math-mathml-a11y", style: "display: none;" },
+      el("math", { class: "mwe-math-element mwe-math-element-inline", "data-mw": JSON.stringify({ name: "math", attrs: {}, body: { extsrc: tex } }) }, el("mi", {}, "x")));
+  const sign = () => el("span", { class: "skin-invert" }, el("img", { alt: "\\oiint", src: "OiintLaTeX.svg.png" }));
+  const shifted = (...kids) => el("span", { style: "position:relative; right:8px; top:18px; margin-right:-8px;" }, ...kids);
+  const sub = wikiMath("\\scriptstyle _S");
+  const integral = el("span", { class: "nowrap" },
+    wikiMath("\\Phi_E = "), el("mjx-container", {}),
+    " ", sign(),
+    shifted(sub, el("mjx-container", {})),
+    " ", wikiMath("\\mathbf{E} \\cdot \\mathrm{d}\\mathbf{A}"), el("mjx-container", {}));
+  const dl = el("dl", {}, el("dd", {}, integral));
+
+  // Hovering any piece picks the whole equation.
+  assert.equal(extractors.findMathRoot(sub.childNodes[0]), integral);
+  assert.deepEqual(
+    { tex: extractors.extractMath(integral).tex, displayMode: extractors.extractMath(integral).displayMode },
+    { tex: "\\Phi_E = \\oiint_S \\mathbf{E} \\cdot \\mathrm{d}\\mathbf{A}", displayMode: true }
+  );
+  assert.equal(
+    serializer.serializeFragment(new MockFragment([dl]), { selectionFormat: "markdown", delimiters: "dollar" }),
+    "$$\n\\Phi_E = \\oiint_S \\mathbf{E} \\cdot \\mathrm{d}\\mathbf{A}\n$$"
+  );
+
+  // Nested in another template (Gauss's law proof): no preintegral, a braced subscript with no
+  // underscore marker of its own handled by position, and the equation continuing after the integrand.
+  const nested = el("span", { class: "nowrap" }, " ", sign(),
+    shifted(wikiMath("{\\scriptstyle S}")), " ", wikiMath("\\mathbf{E} \\cdot \\mathrm{d}\\mathbf{A}"), wikiMath(" = \\frac{Q}{\\varepsilon_0}"));
+  assert.equal(extractors.extractMath(nested).tex, "\\oiint_{S} \\mathbf{E} \\cdot \\mathrm{d}\\mathbf{A} = \\frac{Q}{\\varepsilon_0}");
+
+  // Maxwell's equations: {{oiint}} on its own, its subscript and integrand in the next <math> after an
+  // invisible \vphantom integral. The two copy as one equation, in text and in HTML.
+  const lead = el("span", { class: "nowrap" }, " ", sign(), shifted(), " ");
+  const para = el("p", {}, "where ", lead,
+    wikiMath("{\\vphantom{\\oint}}_{\\scriptstyle\\partial \\Omega}\\mathbf{E}\\cdot\\mathrm{d}\\mathbf{S} = 0"), el("mjx-container", {}), " holds");
+  const joined = "where $\\oiint_{\\partial \\Omega}\\mathbf{E}\\cdot\\mathrm{d}\\mathbf{S} = 0$ holds";
+  assert.equal(serializer.serializeFragment(new MockFragment([para]), { selectionFormat: "plain", delimiters: "dollar" }), joined);
+  const htmlFrag = new MockFragment([para.cloneNode(true)]);
+  htmlFrag.ownerDocument = new MockDocument();
+  const html = serializer.serializeFragmentHtml(htmlFrag, { selectionFormat: "plain", delimiters: "dollar" });
+  assert.ok(html.includes(joined) && !html.includes("OiintLaTeX"), html);
+
+  // Plain text between the pieces can't be rebuilt safely: the pieces copy separately, as before.
+  const mixed = el("span", { class: "nowrap" }, sign(), " for all ", wikiMath("x"));
+  assert.equal(extractors.extractMath(mixed), null);
+  assert.equal(extractors.findMathRoot(mixed), null);
+
+  // Inside {{math}}, MathJax's rendering of a nested equation is skipped in favour of its hidden TeX.
+  const zeta = el("span", { class: "texhtml " }, "{", el("i", {}, "s"), " ∈ ", wikiMath("\\mathbb{C}"), el("mjx-container", {}), " | 0 < Re(", el("i", {}, "s"), ") < 1}");
+  assert.equal(extractors.extractMath(zeta).tex, "\\{s \\in {\\mathbb{C}} | 0 < \\operatorname{Re}(s) < 1\\}");
+});
+
+test("text the page hides from copying ([edit] links, collapsed boxes) is left out, as in the browser's own copy", () => {
+  const doc = new MockDocument();
+  // Stylesheet rules, by class. The maths root is user-select: none too, and must still copy.
+  const hiddenBy = { "mw-editsection": { userSelect: "none" }, "mw-collapsed": { display: "none" }, katex: { userSelect: "none" } };
+  doc.defaultView = {
+    getComputedStyle: (node) => ({ display: "inline", userSelect: "auto", ...hiddenBy[node.className] }),
+  };
+  const editLink = el("span", { class: "mw-editsection" }, "[edit]");
+  const page = el(
+    "div",
+    {},
+    el("h2", {}, "Gauss's law", editLink),
+    el("p", {}, "Let ", katexInline("x^2"), " be positive."),
+    el("div", { class: "mw-collapsed" }, "Authority control")
+  );
+  Object.assign(page, { ownerDocument: doc, isConnected: true });
+  const range = {
+    startContainer: page,
+    endContainer: page,
+    commonAncestorContainer: page,
+    intersectsNode: () => true,
+    cloneRange() {
+      return { ...this, setStartBefore() {}, setEndAfter() {} };
+    },
+    cloneContents: () => new MockFragment(page.childNodes.map((c) => c.cloneNode(true))),
+  };
+  const selection = { isCollapsed: false, rangeCount: 1, getRangeAt: () => range };
+  const out = serializer.serializeSelection(selection, { selectionFormat: "plain", delimiters: "dollar" }, { skipSync: true });
+  assert.equal(out, "Gauss's law\n\nLet $x^2$ be positive.");
+
+  // Navboxes: rows collapsed with hidden="until-found" are left out, and a nested table's rows aren't copied twice.
+  const navbox = el(
+    "table",
+    {},
+    el(
+      "tbody",
+      {},
+      el("tr", {}, el("th", {}, "Electromagnetism")),
+      el("tr", { hidden: "until-found" }, el("td", {}, "BnF data")),
+      el("tr", {}, el("td", {}, el("table", {}, el("tbody", {}, el("tr", {}, el("td", {}, "Gauss's law"))))))
+    )
+  );
+  assert.equal(
+    serializer.serializeFragment(new MockFragment([navbox]), { selectionFormat: "plain", delimiters: "dollar" }),
+    "Electromagnetism\nGauss's law"
+  );
+  // The live page is left as it was.
+  assert.equal(editLink.hasAttribute("data-mathsclip-skip"), false);
 });

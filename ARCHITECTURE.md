@@ -30,7 +30,9 @@ This is a tour of the code for anyone who wants to change it. MathsClip is a Man
 | KaTeX | `.katex`, containing `.katex-mathml` and `.katex-html` (`.katex-display` for display maths) | `<annotation encoding="application/x-tex">` |
 | MathJax 3 / 4 | `<mjx-container>` | `data-cm-tex` from the bridge, or an annotation in `mjx-assistive-mml` |
 | MathJax 2 | `.MathJax` span next to a `<script type="math/tex">` | The script's text, or `MathJax.Hub` via the bridge |
-| Wikipedia | `.mwe-math-element`, with MathML and a fallback image | The `data-mw` JSON, the annotation, or the image's `alt`, with `{\displaystyle …}` removed |
+| Wikipedia | `.mwe-math-element`, with MathML and a fallback image | The `data-mw` JSON (for Wikidata-linked equations, on the element sharing its `about` id), the annotation, or the image's `alt`, with `{\displaystyle …}` removed |
+| Wikipedia `{{math}}` / `{{mvar}}` | `span.texhtml`: plain HTML like `<i>ε</i><sub>0</sub>`, no TeX anywhere | Rebuilt from the HTML (italics, bold, sub/sup, `sfrac`, a Unicode symbol table). Anything it can't map is left as plain text |
+| Wikipedia `{{oint}}` / `{{oiint}}` / `{{oiiint}}` | A `span.nowrap` holding an image of the integral sign (`alt="\oiint"`) between separate `<math>` pieces | The pieces read in page order and joined, the shifted one as the subscript. When the template holds only the sign and the next `<math>` starts with an invisible `\vphantom{\int}`, that equation takes the sign in |
 | Google Search | `[data-xpm-copy-root]` around equation images | `data-xpm-latex` on the root, or on each image joined together |
 | MathML | `<math>` | A TeX annotation, or the `alttext` attribute |
 | LaTeX images | `img.latex`, CodeCogs and `latex.php` images | The `alt` text or the URL's query string |
@@ -44,7 +46,7 @@ Annotations with a `text/plain` encoding are skipped, because they hold spoken t
 
 1. It asks the bridge to rescan, which catches MathJax equations added since the page loaded.
 2. It widens the selection so half-selected equations are copied whole (`expandRangeForMath` in `serializer.js`).
-3. It serialises the selection, replacing each equation with its delimited LaTeX.
+3. It serialises the selection, replacing each equation with its delimited LaTeX. The selection is cloned first, and clones carry no styles, so just before cloning it tags the elements the browser's own copy would leave out (`display: none` or `user-select: none` from page CSS, like Wikipedia's `[edit]` links) with `data-mathsclip-skip`, and removes the tags straight after.
 4. It writes `text/plain`. In Plain Text mode it also writes `text/html` with the maths swapped, so Docs and Word keep the formatting.
 5. It calls `preventDefault()` and `stopImmediatePropagation()`, so a page's own copy handler (Google's, for example) can't overwrite the result.
 
