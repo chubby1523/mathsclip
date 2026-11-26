@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "MathsClip — Copy Math & Equations as LaTeX",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "minimum_chrome_version": "123",
   "description": "Copy maths from any web page as clean LaTeX or Markdown, using Ctrl+C, the right-click menu, or click-to-copy.",
   "permissions": [
