@@ -1,4 +1,4 @@
-# MathsClip
+# <img src="icons/icon.svg" width="34" height="34" alt="" align="absmiddle"> MathsClip
 
 A Chrome extension that copies maths from web pages as LaTeX.
 
@@ -14,7 +14,11 @@ Copy an equation from Wikipedia or a ChatGPT answer and you normally get a jumbl
 - **Right-click an equation** and choose **Copy Equation as LaTeX**. There's no need to select it first.
 - **Click to copy.** Turn this on in the settings, then hover over an equation and click it.
 
-For example, copying a sentence about the quadratic formula gives you something like:
+For example, copying a sentence like this:
+
+> The solutions are $x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$, where $a \neq 0$.
+
+gives you:
 
 ```
 The solutions are $x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$, where $a \neq 0$.
