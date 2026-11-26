@@ -40,6 +40,17 @@ GitHub Actions runs the same checks on every push and pull request.
 
 Keep each pull request to one change, and say which pages you tested it on. If you fix a site, a test in `tests/run-tests.js` with a cut-down copy of that page's HTML stops it breaking again.
 
+### Checking real pages in bulk
+
+The unit tests use a fake DOM, which can't catch everything a real browser does (CSS escaping, MathJax rendering late). To check many real pages at once:
+
+```bash
+node tests/corpus/run.mjs                 # every page in tests/corpus/pages.txt
+node tests/corpus/run.mjs --only Gauss    # just the URLs containing "Gauss"
+```
+
+It opens each page in headless Chrome (or Edge), runs MathsClip's code on the whole article, and compares the result with the browser's own copy. The report in `dist/corpus/report.md` lists words MathsClip adds or drops, equations it can't read, and TeX that looks broken. It needs network access, takes about 5 minutes for the full list, and isn't part of CI.
+
 [ARCHITECTURE.md](ARCHITECTURE.md) explains how the pieces fit together.
 
 ## Versions

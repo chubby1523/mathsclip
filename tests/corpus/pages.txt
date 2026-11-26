@@ -1,0 +1,49 @@
+# Pages for tests/corpus/run.mjs: one URL per line, optionally followed by a CSS selector for the article.
+
+# Wikipedia: physics
+https://en.wikipedia.org/wiki/Gauss%27s_law
+https://en.wikipedia.org/wiki/Maxwell%27s_equations
+https://en.wikipedia.org/wiki/Schr%C3%B6dinger_equation
+https://en.wikipedia.org/wiki/Ideal_gas_law
+https://en.wikipedia.org/wiki/Special_relativity
+https://en.wikipedia.org/wiki/Hydrogen_atom
+https://en.wikipedia.org/wiki/Entropy
+https://en.wikipedia.org/wiki/Harmonic_oscillator
+https://en.wikipedia.org/wiki/Navier%E2%80%93Stokes_equations
+https://en.wikipedia.org/wiki/Lagrangian_mechanics
+https://en.wikipedia.org/wiki/Newton%27s_laws_of_motion
+https://en.wikipedia.org/wiki/Ohm%27s_law
+
+# Wikipedia: maths
+https://en.wikipedia.org/wiki/Pythagorean_theorem
+https://en.wikipedia.org/wiki/Quadratic_equation
+https://en.wikipedia.org/wiki/Fourier_transform
+https://en.wikipedia.org/wiki/Riemann_zeta_function
+https://en.wikipedia.org/wiki/Matrix_(mathematics)
+https://en.wikipedia.org/wiki/Normal_distribution
+https://en.wikipedia.org/wiki/Group_(mathematics)
+https://en.wikipedia.org/wiki/Prime_number
+https://en.wikipedia.org/wiki/Logarithm
+https://en.wikipedia.org/wiki/Derivative
+https://en.wikipedia.org/wiki/Divergence_theorem
+https://en.wikipedia.org/wiki/Bayes%27_theorem
+https://en.wikipedia.org/wiki/Complex_number
+https://en.wikipedia.org/wiki/Vector_space
+
+# Wikipedia: chemistry, statistics, economics
+https://en.wikipedia.org/wiki/Chemical_equilibrium
+https://en.wikipedia.org/wiki/Arrhenius_equation
+https://en.wikipedia.org/wiki/Standard_deviation
+https://en.wikipedia.org/wiki/Black%E2%80%93Scholes_model
+
+# Other sites
+https://math.stackexchange.com/questions/1
+https://math.stackexchange.com/questions/41140/why-is-the-derivative-of-sin-x-equal-to-cos-x
+https://physics.stackexchange.com/questions/3005/why-is-the-speed-of-light-constant
+https://mathoverflow.net/questions/7584/what-are-some-examples-of-colorful-language-in-serious-mathematics-papers
+https://katex.org/
+https://www.mathjax.org/
+https://arxiv.org/html/1706.03762
+https://ncatlab.org/nlab/show/monoid
+https://proofwiki.org/wiki/Pythagoras%27s_Theorem
+https://math.libretexts.org/Bookshelves/Calculus/Calculus_(OpenStax)/03%3A_Derivatives/3.01%3A_Defining_the_Derivative
