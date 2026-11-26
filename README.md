@@ -32,6 +32,7 @@ In the settings you can also choose:
 - **Delimiters:** `$...$` / `$$...$$` or `\(...\)` / `\[...\]`.
 - **Single equations with or without delimiters.** By default the right-click and click options copy just the LaTeX, which is what Overleaf, Desmos and Word's LaTeX equation mode expect.
 - **MathJax's menu.** MathJax sites have their own right-click menu. You can switch it off so Chrome's menu (and the copy option) appears instead.
+- **Wikipedia text-style maths.** Wikipedia writes many symbols as formatted text rather than equations, like *ε*<sub>0</sub>. These copy as LaTeX too (`\varepsilon_0`). It's on by default.
 
 ## Where it works
 
